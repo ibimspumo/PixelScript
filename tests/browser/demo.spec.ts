@@ -7,6 +7,14 @@ test('renders inline data and src-based custom elements', async ({ page }) => {
   await expect(page.locator('[data-testid="src-art"]').locator('svg')).toBeVisible();
 });
 
+test('formats highlighted code snippets for the docs panels', async ({ page }) => {
+  await page.goto('/');
+
+  await expect(page.locator('[data-testid="json-snippet"] .token-key').first()).toBeVisible();
+  await expect(page.locator('[data-testid="js-snippet"] .token-function').first()).toBeVisible();
+  await expect(page.locator('[data-testid="svg-snippet"] .token-tag').first()).toBeVisible();
+});
+
 test('switches render modes on the playground element', async ({ page }) => {
   await page.goto('/');
 

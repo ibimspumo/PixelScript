@@ -13,15 +13,6 @@ import {
 
 registerPixelArtElement();
 
-const checkerDocument = createArt({
-  width: 2,
-  height: 2,
-  pixels: [0, 1, 0, 1],
-  meta: {
-    name: 'Checker'
-  }
-});
-
 const cometDocument = createArt({
   width: 8,
   height: 8,
@@ -113,6 +104,11 @@ if (!app) {
   throw new Error('PixelScript demo root is missing.');
 }
 
+const exampleDocumentPath = `${import.meta.env.BASE_URL}examples/comet.json`;
+const compactCharsetMarkup = BASE64_CHARSET.split('')
+  .map((character) => `<span class="charset-cell">${character}</span>`)
+  .join('');
+
 app.innerHTML = `
   <main class="page-shell">
     <section class="hero panel">
@@ -141,7 +137,7 @@ app.innerHTML = `
     <section class="feature-grid">
       <article class="panel stat-card">
         <p class="stat-label">Compact format</p>
-        <strong>${BASE64_CHARSET}</strong>
+        <div class="charset-string" aria-label="Base64 character set">${compactCharsetMarkup}</div>
         <span>Palette slots map directly to Base64 characters.</span>
       </article>
       <article class="panel stat-card">
@@ -188,9 +184,9 @@ app.innerHTML = `
           <h2>Inline payloads or remote documents.</h2>
         </div>
         <p>
-          The left example uses a direct JSON payload in the element. The right example loads a shareable file from <code>/examples/comet.json</code>.
+          The left example uses a direct JSON payload in the element. The right example loads a shareable file from <code>examples/comet.json</code>.
         </p>
-        <pre class="code-block" data-testid="json-snippet"></pre>
+        <pre class="code-block language-json" data-testid="json-snippet"></pre>
       </div>
       <div class="inline-grid">
         <div class="render-card">
@@ -199,7 +195,7 @@ app.innerHTML = `
         </div>
         <div class="render-card">
           <span class="render-label">Remote <code>src</code></span>
-          <pixel-art data-testid="src-art" id="src-art" src="/examples/comet.json" render="svg" scale="18"></pixel-art>
+          <pixel-art data-testid="src-art" id="src-art" render="svg" scale="18"></pixel-art>
         </div>
       </div>
     </section>
@@ -250,7 +246,7 @@ app.innerHTML = `
         <p>
           Use <code>mountPixelArt()</code> when you want explicit lifecycle control or you are composing pixel art into an existing rendering surface.
         </p>
-        <pre class="code-block" data-testid="js-snippet"></pre>
+        <pre class="code-block language-js" data-testid="js-snippet"></pre>
       </div>
       <div class="render-card">
         <span class="render-label">Mounted via JavaScript</span>
@@ -281,7 +277,7 @@ app.innerHTML = `
           PixelScript can emit inline SVG markup from the same JSON source. That keeps previews, generated docs, and static assets aligned.
         </p>
       </div>
-      <pre class="code-block svg-preview" data-testid="svg-snippet"></pre>
+      <pre class="code-block language-markup svg-preview" data-testid="svg-snippet"></pre>
     </section>
   </main>
 `;
@@ -304,24 +300,27 @@ if (!heroArt || !inlineDataArt || !svgArt || !pngArt || !gifArt || !dataArt || !
   throw new Error('PixelScript demo surface is incomplete.');
 }
 
-const checkerJson = stringifyDocument(checkerDocument);
+const cometJson = stringifyDocument(cometDocument);
 const beaconJson = stringifyDocument(beaconDocument);
 
 heroArt.setAttribute('data', beaconJson);
 heroArt.setAttribute('autoplay', '');
 heroArt.setAttribute('loop', '');
 
-inlineDataArt.setAttribute('data', checkerJson);
-svgArt.setAttribute('data', checkerJson);
-pngArt.setAttribute('data', checkerJson);
+inlineDataArt.setAttribute('data', cometJson);
+svgArt.setAttribute('data', cometJson);
+pngArt.setAttribute('data', cometJson);
 gifArt.setAttribute('data', beaconJson);
-dataArt.setAttribute('data', checkerJson);
+dataArt.setAttribute('data', cometJson);
+document.querySelector<HTMLElement>('#src-art')?.setAttribute('src', exampleDocumentPath);
 
 (playgroundArt as HTMLElement & { document?: unknown }).document = beaconDocument;
 
-jsonSnippet.textContent = checkerJson;
-svgSnippet.textContent = renderSVG(cometDocument, { scale: 12 });
-jsSnippet.textContent = `import { mountPixelArt } from 'pixelscript';
+renderHighlightedCode(jsonSnippet, formatJson(cometJson), 'json');
+renderHighlightedCode(svgSnippet, formatMarkup(renderSVG(cometDocument, { scale: 12 })), 'markup');
+renderHighlightedCode(
+  jsSnippet,
+  `import { mountPixelArt } from 'pixelscript';
 
 const controller = mountPixelArt(target, document, {
   render: 'svg',
@@ -329,7 +328,9 @@ const controller = mountPixelArt(target, document, {
   autoplay: true
 });
 
-controller.play({ iterations: 2 });`;
+controller.play({ iterations: 2 });`,
+  'js'
+);
 
 const mountedController = mountPixelArt(jsMount, beaconDocument, {
   render: 'svg',
@@ -393,4 +394,177 @@ window.addEventListener('beforeunload', () => {
 
 function rows(...values: string[]): string {
   return values.join('');
+}
+
+function renderHighlightedCode(target: HTMLElement, source: string, language: 'json' | 'js' | 'markup'): void {
+  target.innerHTML = highlightCode(source, language);
+}
+
+function highlightCode(source: string, language: 'json' | 'js' | 'markup'): string {
+  switch (language) {
+    case 'json':
+      return applyHighlightPatterns(source, [
+        {
+          regex: /"(?:\\.|[^"\\])*"(?=\s*:)/g,
+          render: (match) => `<span class="token token-key">${escapeHtml(match)}</span>`
+        },
+        {
+          regex: /"(?:\\.|[^"\\])*"/g,
+          render: (match) => `<span class="token token-string">${escapeHtml(match)}</span>`
+        },
+        {
+          regex: /\b(?:true|false|null)\b/g,
+          render: (match) => `<span class="token token-keyword">${escapeHtml(match)}</span>`
+        },
+        {
+          regex: /-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/g,
+          render: (match) => `<span class="token token-number">${escapeHtml(match)}</span>`
+        }
+      ]);
+    case 'js':
+      return applyHighlightPatterns(source, [
+        {
+          regex: /\/\/.*$/gm,
+          render: (match) => `<span class="token token-comment">${escapeHtml(match)}</span>`
+        },
+        {
+          regex: /'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"/g,
+          render: (match) => `<span class="token token-string">${escapeHtml(match)}</span>`
+        },
+        {
+          regex: /\b(?:import|from|const|true|false|null)\b/g,
+          render: (match) => `<span class="token token-keyword">${escapeHtml(match)}</span>`
+        },
+        {
+          regex: /\b[A-Za-z_$][\w$]*(?=\()/g,
+          render: (match) => `<span class="token token-function">${escapeHtml(match)}</span>`
+        },
+        {
+          regex: /-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/g,
+          render: (match) => `<span class="token token-number">${escapeHtml(match)}</span>`
+        }
+      ]);
+    case 'markup':
+      return applyHighlightPatterns(source, [
+        {
+          regex: /<!--[\s\S]*?-->/g,
+          render: (match) => `<span class="token token-comment">${escapeHtml(match)}</span>`
+        },
+        {
+          regex: /<\/?[\w:-]+/g,
+          render: (match) => `<span class="token token-tag">${escapeHtml(match)}</span>`
+        },
+        {
+          regex: /\s[\w:-]+(?==)/g,
+          render: (match) => ` <span class="token token-attr">${escapeHtml(match.trim())}</span>`
+        },
+        {
+          regex: /"(?:\\.|[^"\\])*"/g,
+          render: (match) => `<span class="token token-string">${escapeHtml(match)}</span>`
+        },
+        {
+          regex: /-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/g,
+          render: (match) => `<span class="token token-number">${escapeHtml(match)}</span>`
+        }
+      ]);
+  }
+}
+
+function applyHighlightPatterns(
+  source: string,
+  patterns: Array<{ regex: RegExp; render: (match: string) => string }>
+): string {
+  let value = source;
+  const replacements: string[] = [];
+
+  for (const pattern of patterns) {
+    pattern.regex.lastIndex = 0;
+    value = value.replace(pattern.regex, (match) => {
+      const placeholder = `__PIXELSCRIPT_TOKEN_${replacements.length}__`;
+      replacements.push(pattern.render(match));
+      return placeholder;
+    });
+  }
+
+  value = escapeHtml(value);
+
+  replacements.forEach((replacement, index) => {
+    value = value.replace(`__PIXELSCRIPT_TOKEN_${index}__`, replacement);
+  });
+
+  return value;
+}
+
+function formatJson(source: string): string {
+  return JSON.stringify(JSON.parse(source), null, 2);
+}
+
+function formatMarkup(source: string): string {
+  const tokens = source.replace(/>\s+</g, '><').match(/<[^>]+>|[^<]+/g) ?? [];
+  const lines: string[] = [];
+  let indentLevel = 0;
+
+  for (const token of tokens) {
+    const trimmed = token.trim();
+
+    if (!trimmed) {
+      continue;
+    }
+
+    if (trimmed.startsWith('</')) {
+      indentLevel = Math.max(indentLevel - 1, 0);
+      lines.push(`${indent(indentLevel)}${trimmed}`);
+      continue;
+    }
+
+    if (trimmed.startsWith('<') && !trimmed.startsWith('<!--')) {
+      const formattedTag = formatTag(trimmed, indentLevel);
+      lines.push(...formattedTag);
+
+      if (!trimmed.endsWith('/>') && !trimmed.startsWith('<?')) {
+        indentLevel += 1;
+      }
+
+      continue;
+    }
+
+    lines.push(`${indent(indentLevel)}${trimmed}`);
+  }
+
+  return lines.join('\n');
+}
+
+function formatTag(tag: string, indentLevel: number): string[] {
+  const isSelfClosing = tag.endsWith('/>');
+  const inner = tag.slice(1, tag.length - (isSelfClosing ? 2 : 1)).trim();
+  const [tagName, ...attributes] = inner.match(/[^\s=]+(?:="[^"]*")?/g) ?? [];
+
+  if (!tagName) {
+    return [`${indent(indentLevel)}${tag}`];
+  }
+
+  if (attributes.length === 0) {
+    return [`${indent(indentLevel)}${tag}`];
+  }
+
+  const lines = [`${indent(indentLevel)}<${tagName}`];
+
+  for (const attribute of attributes) {
+    lines.push(`${indent(indentLevel + 1)}${attribute}`);
+  }
+
+  lines.push(`${indent(indentLevel)}${isSelfClosing ? '/>' : '>'}`);
+
+  return lines;
+}
+
+function indent(level: number): string {
+  return '  '.repeat(level);
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
 }
