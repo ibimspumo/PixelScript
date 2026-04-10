@@ -4,7 +4,7 @@
 
 - Name: `PixelScript`
 - Repo: `ibimspumo/PixelScript`
-- npm package: `@pumo/pixelscript`
+- npm package: `@ibimspumo/pixelscript`
 - Default branch: `main`
 - Demo/Pages URL: `https://ibimspumo.github.io/PixelScript/`
 
@@ -62,18 +62,18 @@ npm run release:check
 
 ## GitHub Secrets
 
-- Required secret: `NPM_TOKEN`
-- `NPM_TOKEN` must be able to publish `@pumo/pixelscript`
-- If npm publish fails with 2FA or permissions errors, replace the secret with an automation token or a granular token that can publish with the account's current npm security settings
+- Trusted publishing is the preferred npm release mechanism
+- `NPM_TOKEN` is no longer required for the release workflow itself
+- Keep a local npm token only for manual debugging or private dependency installs if needed
 
 ## npm Notes
 
-- The package was moved from the planned unscoped name to `@pumo/pixelscript`
-- Reason: the provided publish token authenticated as npm user `pumo`
+- The package publishes under the npm organization scope `@ibimspumo/pixelscript`
+- The GitHub repository owner is also `ibimspumo`, which matches npm trusted publisher setup cleanly
 - Before future releases, verify availability with:
 
 ```bash
-npm view @pumo/pixelscript version --json
+npm view @ibimspumo/pixelscript version --json
 ```
 
 If the package is not yet published, npm returns `E404`, which is expected before the first successful publish.
@@ -97,6 +97,11 @@ gh release view v0.1.2 -R ibimspumo/PixelScript
 
 - `v0.1.0` was removed because the early release workflow and Pages setup were not final
 - `v0.1.1` has a GitHub release entry and should be treated as the first real release candidate in GitHub
+- npm Trusted Publishing should be configured on npmjs.com for package `@ibimspumo/pixelscript` with:
+  - Organization or user: `ibimspumo`
+  - Repository: `PixelScript`
+  - Workflow filename: `release.yml`
+  - Environment name: leave empty unless the workflow is later bound to a GitHub Environment
 - If a future npm publish must be retried, prefer cutting a fresh patch version instead of mutating an already-used tag
 
 ## Operational Notes
