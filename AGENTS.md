@@ -62,8 +62,8 @@ npm run release:check
 
 ## GitHub Secrets
 
-- `NPM_TOKEN` is currently required by `.github/workflows/release.yml`
-- The release workflow publishes with `NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}`
+- `NPM_TOKEN` is no longer required by `.github/workflows/release.yml`
+- The release workflow publishes via npm Trusted Publishing over GitHub OIDC
 - Keep a local npm token only for manual debugging or private dependency installs if needed
 
 ## npm Notes
@@ -99,6 +99,7 @@ gh release view v0.1.2 -R ibimspumo/PixelScript
 - `v0.1.0` was removed because the early release workflow and Pages setup were not final
 - `v0.1.1` has a GitHub release entry and should be treated as the first real release candidate in GitHub
 - `@ibimspumo/pixelscript@0.1.1` is the first successful npm release
+- Trusted Publishing was connected on npm for `ibimspumo/PixelScript` using workflow `release.yml`
 - npm Trusted Publishing should be configured on npmjs.com for package `@ibimspumo/pixelscript` with:
   - Organization or user: `ibimspumo`
   - Repository: `PixelScript`
