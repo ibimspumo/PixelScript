@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "width": 8,
+  "height": 8,
+  "palette": {
+    "kind": "custom",
+    "colors": [
+      null,
+      "#ffffff",
+      "#d9fff5",
+      "#1f1f1f",
+      "#ffb9a8",
+      "#ff5d38",
+      "#ffe08a",
+      "#57c84d",
+      "#1bc8af",
+      "#4f8dff",
+      "#944ff0",
+      "#0a1c52",
+      "#9b6300"
+    ],
+    "name": "README Arcade"
+  },
+  "frames": [
+    {
+      "pixels": "AAFAFAAAAFFGFFAAAAFFFAAAAAAGAAAAAAAHAAAAAAHHHAAAAAAHAAAAAAAAAAAA"
+    }
+  ],
+  "meta": {
+    "name": "Flower Spark",
+    "description": "A playful flower icon.",
+    "tags": [
+      "readme",
+      "sprite"
+    ]
+  }
+}

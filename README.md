@@ -1,11 +1,29 @@
 # PixelScript
 
-PixelScript is a TypeScript-authored JavaScript library for programmable pixel art and animations. It keeps one canonical JSON document model at the center, then fans that source into:
+<p align="center">
+  <img src="./docs/readme-assets/hero-arcade-night.gif" alt="Animated PixelScript hero scene with a moon, comet, and tiny pixel characters." width="820">
+</p>
 
-- JavaScript APIs
-- inline HTML via `<pixel-art>`
-- SVG, PNG, GIF, and Canvas rendering
-- shareable JSON documents
+<p align="center">
+  <strong>Programmatic pixel art for JavaScript.</strong><br>
+  Build sprites and animations from arrays or compact Base64 pixel strings, then render them as <code>SVG</code>, <code>PNG</code>, <code>GIF</code>, or <code>Canvas</code> from the same JSON source.
+</p>
+
+<p align="center">
+  <img src="./docs/readme-assets/ghost-wave.gif" alt="Animated ghost sprite." width="92">
+  <img src="./docs/readme-assets/cat-face.png" alt="Pixel buddy sprite." width="92">
+  <img src="./docs/readme-assets/potion-brew.png" alt="Potion sprite." width="92">
+  <img src="./docs/readme-assets/flower-spark.png" alt="Flower sprite." width="92">
+  <img src="./docs/readme-assets/comet-burst.gif" alt="Animated comet sprite." width="184">
+</p>
+
+## Why PixelScript
+
+- One canonical JSON document model for every output.
+- Programmatic authoring from numeric arrays, compact strings, or shareable JSON files.
+- Built-in 64-slot palette keyed to the Base64 character set, including transparency at slot `0`.
+- Browser-first runtime plus Node-friendly rendering for docs, pipelines, and asset generation.
+- Inline HTML support through `<pixel-art>`.
 
 ## Install
 
@@ -13,52 +31,121 @@ PixelScript is a TypeScript-authored JavaScript library for programmable pixel a
 npm install @ibimspumo/pixelscript
 ```
 
-The package is configured for the npm organization scope `@ibimspumo/pixelscript`.
+## Same Art, Different Outputs
 
-## Core idea
+<table>
+  <tr>
+    <td align="center"><strong>SVG</strong></td>
+    <td align="center"><strong>PNG</strong></td>
+    <td align="center"><strong>GIF</strong></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="./docs/readme-assets/comet-burst.svg" alt="Comet rendered as SVG." width="210"></td>
+    <td align="center"><img src="./docs/readme-assets/comet-burst.png" alt="Comet rendered as PNG." width="210"></td>
+    <td align="center"><img src="./docs/readme-assets/comet-burst.gif" alt="Comet rendered as animated GIF." width="210"></td>
+  </tr>
+</table>
 
-PixelScript stores pixel art as a compact Base64-indexed string plus dimensions and palette metadata.
+```js
+import { createAnimation, renderGIF, renderPNG, renderSVG } from '@ibimspumo/pixelscript';
+
+const comet = createAnimation({
+  width: 6,
+  height: 3,
+  frames: [
+    { pixels: [0, 0, 0, 6, 1, 0, 0, 0, 6, 1, 0, 0, 0, 6, 1, 0, 0, 0] },
+    { pixels: [0, 0, 6, 1, 0, 0, 0, 6, 1, 0, 0, 0, 6, 1, 0, 0, 0, 0] }
+  ],
+  animation: { fps: 8, loop: true }
+});
+
+const svg = renderSVG(comet, { scale: 18 });
+const png = await renderPNG(comet, { scale: 18 });
+const gif = await renderGIF(comet, { scale: 18, iterations: 'infinite' });
+```
+
+## Sprite Shelf
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="./docs/readme-assets/ghost-wave.gif" alt="Animated ghost sprite." width="140"><br>
+      <strong>Ghost Wave</strong><br>
+      <a href="./docs/readme-assets/ghost-wave.json">JSON</a>
+    </td>
+    <td align="center">
+      <img src="./docs/readme-assets/cat-face.svg" alt="Pixel buddy sprite." width="140"><br>
+      <strong>Pixel Buddy</strong><br>
+      <a href="./docs/readme-assets/cat-face.json">JSON</a>
+    </td>
+    <td align="center">
+      <img src="./docs/readme-assets/potion-brew.svg" alt="Potion sprite." width="140"><br>
+      <strong>Potion Brew</strong><br>
+      <a href="./docs/readme-assets/potion-brew.json">JSON</a>
+    </td>
+    <td align="center">
+      <img src="./docs/readme-assets/flower-spark.svg" alt="Flower sprite." width="140"><br>
+      <strong>Flower Spark</strong><br>
+      <a href="./docs/readme-assets/flower-spark.json">JSON</a>
+    </td>
+  </tr>
+</table>
+
+## Compact At The Core
+
+PixelScript stores each frame as a compact row-major string over the Base64 alphabet. That keeps the source small, diffable, and easy to share.
 
 ```json
 {
   "version": 1,
-  "width": 2,
-  "height": 2,
-  "palette": { "kind": "default64", "name": "PixelScript-64" },
-  "frames": [{ "pixels": "ABAB" }]
+  "width": 8,
+  "height": 8,
+  "palette": {
+    "kind": "default64",
+    "name": "PixelScript-64"
+  },
+  "frames": [
+    {
+      "pixels": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    }
+  ],
+  "meta": {
+    "name": "PixelScript-64 Grid"
+  }
 }
 ```
 
-- `A` is palette index `0`, reserved for transparency
-- `B` is palette index `1`, the first visible color in the default palette
-- the default palette contains 64 slots including transparency
+<p align="center">
+  <img src="./docs/readme-assets/palette-grid.png" alt="PixelScript default 64-color palette grid." width="420">
+</p>
 
-## JavaScript usage
+- `A` is palette index `0`, reserved for transparency.
+- `B` is palette index `1`, the first visible slot.
+- The full built-in palette is visualized above and can be replaced with custom palettes up to 64 entries.
+
+## JavaScript API
 
 ```js
-import { createArt, renderSVG, renderPNG } from '@ibimspumo/pixelscript';
+import {
+  createArt,
+  createAnimation,
+  mountPixelArt,
+  renderPNG,
+  renderSVG
+} from '@ibimspumo/pixelscript';
 
-const art = createArt({
+const checker = createArt({
   width: 2,
   height: 2,
   pixels: [0, 1, 0, 1]
 });
 
-const svg = renderSVG(art, { scale: 24 });
-const png = await renderPNG(art, { scale: 24 });
-```
-
-## Animation usage
-
-```js
-import { createAnimation, mountPixelArt } from '@ibimspumo/pixelscript';
-
-const animation = createAnimation({
-  width: 2,
-  height: 2,
+const beacon = createAnimation({
+  width: 4,
+  height: 4,
   frames: [
-    { pixels: [0, 1, 0, 1], durationMs: 120 },
-    { pixels: [1, 0, 1, 0], durationMs: 120 }
+    { pixels: 'ABABABABABABABAB', durationMs: 120 },
+    { pixels: 'BABABABABABABABA', durationMs: 120 }
   ],
   animation: {
     fps: 8,
@@ -66,33 +153,55 @@ const animation = createAnimation({
   }
 });
 
-const controller = mountPixelArt(document.querySelector('#target'), animation, {
+const svg = renderSVG(checker, { scale: 24 });
+const png = await renderPNG(checker, { scale: 24 });
+
+const controller = mountPixelArt(document.querySelector('#target'), beacon, {
   render: 'canvas',
-  scale: 24
+  scale: 20,
+  autoplay: true
 });
 
 controller.play({ iterations: 2 });
 ```
 
-## Custom element usage
+## Inline HTML
 
 ```html
-<script src="pixelscript.min.js"></script>
+<script src="./dist/pixelscript.min.js"></script>
 
 <pixel-art
-  render="svg"
-  scale="20"
-  data='{"version":1,"width":2,"height":2,"palette":{"kind":"default64","name":"PixelScript-64"},"frames":[{"pixels":"ABAB"}]}'
+  render="gif"
+  scale="18"
+  autoplay
+  loop
+  src="./docs/readme-assets/comet-burst.json"
 ></pixel-art>
 ```
 
-The standalone bundle auto-registers `<pixel-art>`. Module usage can register explicitly:
+Module usage can register the element explicitly:
 
 ```js
 import { registerPixelArtElement } from '@ibimspumo/pixelscript/element';
 
 registerPixelArtElement();
 ```
+
+## Shareable Documents
+
+Every visual in this README is generated from PixelScript documents in [`docs/readme-assets`](./docs/readme-assets):
+
+- [hero-arcade-night.json](./docs/readme-assets/hero-arcade-night.json)
+- [ghost-wave.json](./docs/readme-assets/ghost-wave.json)
+- [comet-burst.json](./docs/readme-assets/comet-burst.json)
+- [palette-grid.json](./docs/readme-assets/palette-grid.json)
+
+That same JSON can be used in:
+
+- JavaScript code
+- inline HTML via `data` or `src`
+- docs generation
+- static asset pipelines
 
 ## Public API
 
@@ -119,15 +228,18 @@ registerPixelArtElement();
 npm install
 npm run dev
 npm run typecheck
-npm run test
-npm run build
+npm test
+npm run readme:assets
 ```
 
-## Docs and examples
+README visuals are generated by [`scripts/generate-readme-assets.mjs`](./scripts/generate-readme-assets.mjs).
 
-- Demo/docs app: built from [`demo/main.ts`](/Users/timocorvinus/Desktop/PixelScript/demo/main.ts)
-- JSON schema: [`schema/pixelscript.schema.json`](/Users/timocorvinus/Desktop/PixelScript/schema/pixelscript.schema.json)
-- Example documents: [`examples/checker.json`](/Users/timocorvinus/Desktop/PixelScript/examples/checker.json), [`examples/comet.json`](/Users/timocorvinus/Desktop/PixelScript/examples/comet.json)
+## Links
+
+- Demo/docs app: [demo/main.ts](./demo/main.ts)
+- JSON schema: [schema/pixelscript.schema.json](./schema/pixelscript.schema.json)
+- Example docs: [examples/checker.json](./examples/checker.json), [examples/comet.json](./examples/comet.json)
+- GitHub Pages demo: `https://ibimspumo.github.io/PixelScript/`
 
 ## License
 

@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "width": 8,
+  "height": 8,
+  "palette": {
+    "kind": "default64",
+    "name": "PixelScript-64"
+  },
+  "frames": [
+    {
+      "pixels": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    }
+  ],
+  "meta": {
+    "name": "PixelScript-64 Grid",
+    "description": "The built-in 64-slot palette laid out in order.",
+    "tags": [
+      "readme",
+      "palette",
+      "default64"
+    ]
+  }
+}
