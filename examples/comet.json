@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "width": 8,
+  "height": 8,
+  "palette": {
+    "kind": "default64",
+    "name": "PixelScript-64"
+  },
+  "frames": [
+    {
+      "pixels": "AAAAABAAAAAABNAAAAABNNNAAABNNNNNABNNNNNAAABNNNAAAAABNAAAAAAABAAA"
+    }
+  ],
+  "meta": {
+    "name": "Comet"
+  }
+}

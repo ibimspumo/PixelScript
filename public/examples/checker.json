@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "width": 4,
+  "height": 4,
+  "palette": {
+    "kind": "default64",
+    "name": "PixelScript-64"
+  },
+  "frames": [
+    {
+      "pixels": "ABABBABAABABBABA"
+    }
+  ],
+  "meta": {
+    "name": "Checker"
+  }
+}
