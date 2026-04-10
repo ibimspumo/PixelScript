@@ -1,5 +1,5 @@
 {
-  "name": "pixelscript",
+  "name": "@pumo/pixelscript",
   "version": "0.1.0",
   "description": "A compact JavaScript library for programmable pixel art and animations.",
   "type": "module",

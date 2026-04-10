@@ -10,10 +10,10 @@ PixelScript is a TypeScript-authored JavaScript library for programmable pixel a
 ## Install
 
 ```bash
-npm install pixelscript
+npm install @pumo/pixelscript
 ```
 
-If the unscoped npm name is unavailable at publish time, the fallback package name is `@ibimspumo/pixelscript`.
+The package is configured for the scoped npm name `@pumo/pixelscript` so the release flow does not depend on the previously unpublished unscoped `pixelscript` package.
 
 ## Core idea
 
@@ -36,7 +36,7 @@ PixelScript stores pixel art as a compact Base64-indexed string plus dimensions 
 ## JavaScript usage
 
 ```js
-import { createArt, renderSVG, renderPNG } from 'pixelscript';
+import { createArt, renderSVG, renderPNG } from '@pumo/pixelscript';
 
 const art = createArt({
   width: 2,
@@ -51,7 +51,7 @@ const png = await renderPNG(art, { scale: 24 });
 ## Animation usage
 
 ```js
-import { createAnimation, mountPixelArt } from 'pixelscript';
+import { createAnimation, mountPixelArt } from '@pumo/pixelscript';
 
 const animation = createAnimation({
   width: 2,
@@ -89,7 +89,7 @@ controller.play({ iterations: 2 });
 The standalone bundle auto-registers `<pixel-art>`. Module usage can register explicitly:
 
 ```js
-import { registerPixelArtElement } from 'pixelscript/element';
+import { registerPixelArtElement } from '@pumo/pixelscript/element';
 
 registerPixelArtElement();
 ```
