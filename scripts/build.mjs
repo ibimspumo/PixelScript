@@ -1,4 +1,9 @@
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+
+const scriptDir = dirname(fileURLToPath(import.meta.url));
+const viteBin = resolve(scriptDir, '../node_modules/vite/bin/vite.js');
 
 const steps = [
   ['vite', 'build'],
@@ -7,7 +12,7 @@ const steps = [
 ];
 
 for (const [command, ...args] of steps) {
-  const result = spawnSync(process.platform === 'win32' ? `${command}.cmd` : command, args, {
+  const result = spawnSync(process.execPath, [viteBin, ...args], {
     stdio: 'inherit',
     shell: false
   });

@@ -36,9 +36,7 @@ jobs:
         run: npm ci
 
       - name: Build demo
-        run: |
-          npm run clean
-          BASE_PATH=/PixelScript/ node ./scripts/build.mjs
+        run: BASE_PATH=/PixelScript/ npm run build
         env:
           CI: true
 
