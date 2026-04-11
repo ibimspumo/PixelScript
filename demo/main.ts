@@ -208,8 +208,20 @@ app.innerHTML = `
         </div>
         <p>
           The controller drives the same animation through different website render modes. Finite runs emit a completion event, so external buttons can coordinate playback.
+          Pixel interaction is enabled on the canvas sandbox below; click, drag and hold actions are surfaced as custom events.
         </p>
         <div class="control-row">
+          <label class="field">
+            <span>Pixel interaction</span>
+            <label>
+              <input type="checkbox" id="playground-interactive" checked />
+              Enabled
+            </label>
+          </label>
+          <label class="field">
+            <span>Hold delay (ms)</span>
+            <input type="number" id="hold-delay-ms" value="500" min="0" max="5000" step="50" />
+          </label>
           <label class="field">
             <span>Render mode</span>
             <select data-testid="mode-select" id="mode-select">
@@ -226,10 +238,15 @@ app.innerHTML = `
           <button class="button ghost" data-testid="pause" id="pause">Pause</button>
           <button class="button ghost" data-testid="stop" id="stop">Stop</button>
           <button class="button ghost" data-testid="seek-last" id="seek-last">Seek last frame</button>
+          <button class="button ghost" data-testid="paint-pixels" id="paint-pixels">Paint pixels via JS</button>
         </div>
         <div class="status-strip">
           <span>Completion events</span>
           <output data-testid="completion-count" id="completion-count">0</output>
+        </div>
+        <div class="status-strip">
+          <span>Last pixel event</span>
+          <output data-testid="last-pixel-event" id="last-pixel-event">none</output>
         </div>
       </div>
       <div class="playground-stage">
@@ -294,9 +311,12 @@ const jsSnippet = document.querySelector<HTMLElement>('[data-testid="js-snippet"
 const svgSnippet = document.querySelector<HTMLElement>('[data-testid="svg-snippet"]');
 const paletteGrid = document.querySelector<HTMLDivElement>('#palette-grid');
 const completionCount = document.querySelector<HTMLOutputElement>('#completion-count');
+const lastPixelEvent = document.querySelector<HTMLOutputElement>('#last-pixel-event');
+const playgroundInteractive = document.querySelector<HTMLInputElement>('#playground-interactive');
+const holdDelayInput = document.querySelector<HTMLInputElement>('#hold-delay-ms');
 const jsMount = document.querySelector<HTMLDivElement>('#js-api-mount');
 
-if (!heroArt || !inlineDataArt || !svgArt || !pngArt || !gifArt || !dataArt || !playgroundArt || !jsonSnippet || !jsSnippet || !svgSnippet || !paletteGrid || !completionCount || !jsMount) {
+if (!heroArt || !inlineDataArt || !svgArt || !pngArt || !gifArt || !dataArt || !playgroundArt || !jsonSnippet || !jsSnippet || !svgSnippet || !paletteGrid || !completionCount || !lastPixelEvent || !playgroundInteractive || !holdDelayInput || !jsMount) {
   throw new Error('PixelScript demo surface is incomplete.');
 }
 
@@ -328,7 +348,16 @@ const controller = mountPixelArt(target, document, {
   autoplay: true
 });
 
-controller.play({ iterations: 2 });`,
+controller.play({ iterations: 2 });
+
+const jsPaintButton = document.querySelector('#paint-pixels');
+jsPaintButton?.addEventListener('click', () => {
+  controller.setPixel(4, 4, 8);
+  controller.setPixels([
+    { x: 2, y: 2, paletteIndex: 2 },
+    { x: 3, y: 2, paletteIndex: 3 }
+  ]);
+});`,
   'js'
 );
 
@@ -345,6 +374,51 @@ playgroundArt.addEventListener('pixelscript:complete', () => {
   completionCount.value = String(completions);
   completionCount.textContent = String(completions);
 });
+
+const syncPlaygroundInteraction = (): void => {
+  if (playgroundInteractive.checked) {
+    playgroundArt.setAttribute('interactive', 'true');
+  } else {
+    playgroundArt.setAttribute('interactive', 'false');
+  }
+
+  const holdDelay = Number.parseInt(holdDelayInput.value, 10);
+  if (Number.isFinite(holdDelay) && holdDelay >= 0) {
+    playgroundArt.setAttribute('hold-delay', String(holdDelay));
+  }
+};
+
+playgroundInteractive.addEventListener('change', syncPlaygroundInteraction);
+holdDelayInput.addEventListener('change', syncPlaygroundInteraction);
+syncPlaygroundInteraction();
+
+const pixelInteractiveEvents = [
+  'pixelscript:pixel-hover',
+  'pixelscript:pixel-enter',
+  'pixelscript:pixel-leave',
+  'pixelscript:pixel-down',
+  'pixelscript:pixel-up',
+  'pixelscript:pixel-click',
+  'pixelscript:pixel-drag',
+  'pixelscript:pixel-hold',
+  'pixelscript:pixel-change'
+] as const;
+
+for (const type of pixelInteractiveEvents) {
+  playgroundArt.addEventListener(type, (event) => {
+    const detail = (event as CustomEvent).detail;
+
+    if (!detail) {
+      lastPixelEvent.value = type;
+      lastPixelEvent.textContent = type;
+      return;
+    }
+
+    const pixel = `${detail.sourceX ?? detail.x}x${detail.sourceY ?? detail.y}`;
+    lastPixelEvent.value = `${type}: ${pixel} <- ${detail.previousIndex ?? ''}${detail.previousIndex !== undefined ? '|' : ''}${detail.paletteIndex ?? ''}`;
+    lastPixelEvent.textContent = lastPixelEvent.value;
+  });
+}
 
 document.querySelector<HTMLSelectElement>('#mode-select')?.addEventListener('change', (event) => {
   const select = event.currentTarget as HTMLSelectElement;
@@ -369,6 +443,20 @@ document.querySelector<HTMLButtonElement>('#stop')?.addEventListener('click', ()
 
 document.querySelector<HTMLButtonElement>('#seek-last')?.addEventListener('click', () => {
   (playgroundArt as HTMLElement & { seek: (frameIndex: number) => void }).seek(beaconDocument.frames.length - 1);
+});
+
+document.querySelector<HTMLButtonElement>('#paint-pixels')?.addEventListener('click', () => {
+  const controller = inlineDataArt as HTMLElement & {
+    setPixels: (updates: Array<{ x: number; y: number; paletteIndex: number }>, frameIndex?: number) => void;
+  };
+
+  controller.setPixels([
+    { x: 1, y: 1, paletteIndex: 3 },
+    { x: 2, y: 1, paletteIndex: 4 },
+    { x: 3, y: 1, paletteIndex: 5 },
+    { x: 4, y: 1, paletteIndex: 6 },
+    { x: 5, y: 1, paletteIndex: 7 }
+  ]);
 });
 
 for (const [index, color] of getDefaultPalette().colors!.entries()) {

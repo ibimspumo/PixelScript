@@ -132,13 +132,49 @@ export interface PixelArtDataUrlOptions extends PixelArtGIFRenderOptions {
 export interface PixelArtMountOptions extends PixelArtRenderOptions {
   autoplay?: boolean;
   render?: PixelArtRenderMode;
+  interactive?: boolean;
+  holdDelayMs?: number;
 }
 
 export interface PixelArtPlayOptions {
   iterations?: number | 'infinite';
 }
 
+export interface PixelArtPixelPosition {
+  x: number;
+  y: number;
+}
+
+export interface PixelArtPixel {
+  frameIndex: number;
+  x: number;
+  y: number;
+}
+
+export interface PixelArtPixelMutation extends PixelArtPixel {
+  paletteIndex: number;
+}
+
+export interface PixelArtPixelChange extends PixelArtPixel {
+  previousIndex: number;
+  paletteIndex: number;
+}
+
+export interface PixelArtPixelEventDetail extends PixelArtPixel {
+  previousIndex?: number;
+  paletteIndex: number;
+  sourceX: number;
+  sourceY: number;
+  pointerId: number;
+  button: number;
+  hasPixel: boolean;
+}
+
 export interface PixelArtController {
+  getCurrentFrame(): number;
+  getPixel(frameIndex: number, x: number, y: number): number;
+  setPixel(frameIndex: number, x: number, y: number, paletteIndex: number): void;
+  setPixels(frameIndex: number, updates: readonly PixelArtPixelMutation[]): void;
   play(options?: PixelArtPlayOptions): void;
   pause(): void;
   stop(): void;

@@ -1,6 +1,6 @@
 import { mountPixelArt } from '@/dom/mount';
 import { parseDocument } from '@/core/document';
-import type { PixelArtController, PixelArtMountOptions, PixelScriptDocument } from '@/schema/types';
+import type { PixelArtController, PixelArtMountOptions, PixelArtPixelMutation, PixelScriptDocument } from '@/schema/types';
 
 const HTMLElementBase = (typeof HTMLElement === 'undefined' ? class {} : HTMLElement) as typeof HTMLElement;
 
@@ -21,7 +21,9 @@ export class PixelArtElement extends HTMLElementBase {
       'contrast',
       'alpha',
       'tint',
-      'tint-amount'
+      'tint-amount',
+      'interactive',
+      'hold-delay'
     ];
   }
 
@@ -65,6 +67,36 @@ export class PixelArtElement extends HTMLElementBase {
 
   get document(): PixelScriptDocument | null {
     return this.propertyDocument ?? this.currentDocument;
+  }
+
+  getPixel(x: number, y: number, frameIndex?: number): number | null {
+    if (!this.controller) {
+      return null;
+    }
+
+    const index = frameIndex ?? this.controller.getCurrentFrame();
+    return this.controller.getPixel(index, x, y);
+  }
+
+  setPixel(x: number, y: number, paletteIndex: number, frameIndex?: number): void {
+    if (!this.controller) {
+      return;
+    }
+
+    const index = frameIndex ?? this.controller.getCurrentFrame();
+    this.controller.setPixel(index, x, y, paletteIndex);
+  }
+
+  setPixels(
+    updates: ReadonlyArray<Pick<PixelArtPixelMutation, 'x' | 'y' | 'paletteIndex'>>,
+    frameIndex?: number
+  ): void {
+    if (!this.controller) {
+      return;
+    }
+
+    const index = frameIndex ?? this.controller.getCurrentFrame();
+    this.controller.setPixels(index, updates);
   }
 
   set document(value: PixelScriptDocument | null) {
@@ -245,6 +277,22 @@ export class PixelArtElement extends HTMLElementBase {
         ...(options.color ?? {}),
         tintAmount: value
       };
+    }
+
+    const interactive = this.getAttribute('interactive');
+    if (interactive !== null) {
+      options.interactive = interactive !== 'false';
+    }
+
+    const holdDelay = this.getAttribute('hold-delay');
+    if (holdDelay !== null) {
+      const value = Number.parseFloat(holdDelay);
+
+      if (Number.isNaN(value)) {
+        throw new TypeError('hold-delay must be a number.');
+      }
+
+      options.holdDelayMs = value;
     }
 
     if (loop !== null) {

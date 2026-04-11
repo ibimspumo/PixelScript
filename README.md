@@ -162,6 +162,15 @@ const controller = mountPixelArt(document.querySelector('#target'), beacon, {
   autoplay: true
 });
 
+const firstPixel = controller.getPixel(0, 1, 1);
+console.log('Frame 0, pixel (1,1):', firstPixel);
+
+controller.setPixel(0, 4, 4, 8);
+controller.setPixels(0, [
+  { x: 3, y: 3, paletteIndex: 2 },
+  { x: 4, y: 3, paletteIndex: 3 }
+]);
+
 controller.play({ iterations: 2 });
 ```
 
@@ -185,6 +194,35 @@ Module usage can register the element explicitly:
 import { registerPixelArtElement } from '@ibimspumo/pixelscript/element';
 
 registerPixelArtElement();
+```
+
+## Per-Pixel Interaktion (Canvas only)
+
+Pointer interactions are supported on `<pixel-art render="canvas">`:
+
+- `pixelscript:pixel-hover`
+- `pixelscript:pixel-enter`
+- `pixelscript:pixel-leave`
+- `pixelscript:pixel-down`
+- `pixelscript:pixel-up`
+- `pixelscript:pixel-click`
+- `pixelscript:pixel-drag`
+- `pixelscript:pixel-hold`
+- `pixelscript:pixel-change` when pixels are changed programmatically
+
+```js
+const hero = document.querySelector('pixel-art#hero-art');
+
+hero.addEventListener('pixelscript:pixel-click', (event) => {
+  const detail = event.detail;
+  console.log('clicked pixel', detail.sourceX, detail.sourceY, detail.paletteIndex);
+  hero.setPixel(detail.sourceX, detail.sourceY, 0);
+});
+
+hero.addEventListener('pixelscript:pixel-change', (event) => {
+  const detail = event.detail;
+  console.log('pixel changed', detail.previousIndex, '->', detail.paletteIndex, 'at', detail.sourceX, detail.sourceY);
+});
 ```
 
 ## Shareable Documents
@@ -222,6 +260,19 @@ That same JSON can be used in:
 - `renderDataURL(doc, options)`
 - `mountPixelArt(target, doc, options)`
 - `registerPixelArtElement()`
+- `PixelArtController` APIs returned by `mountPixelArt`
+  - `getPixel(frameIndex, x, y)`
+  - `setPixel(frameIndex, x, y, paletteIndex)`
+  - `setPixels(frameIndex, updates)`
+  - `getCurrentFrame()`
+  - `play(options)`
+  - `pause()`
+  - `stop()`
+  - `seek(frameIndex)`
+- `<pixel-art>` element instance methods
+  - `getPixel(x, y, frameIndex?)`
+  - `setPixel(x, y, paletteIndex, frameIndex?)`
+  - `setPixels(updates, frameIndex?)`
 
 ## Development
 
