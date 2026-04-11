@@ -151,7 +151,9 @@ export interface PixelArtPixel {
   y: number;
 }
 
-export interface PixelArtPixelMutation extends PixelArtPixel {
+export interface PixelArtPixelMutation {
+  x: number;
+  y: number;
   paletteIndex: number;
 }
 

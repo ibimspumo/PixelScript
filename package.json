@@ -1,6 +1,6 @@
 {
   "name": "@ibimspumo/pixelscript",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "A compact JavaScript library for programmable pixel art and animations.",
   "type": "module",
   "license": "MIT",

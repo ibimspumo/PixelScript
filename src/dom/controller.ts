@@ -797,18 +797,21 @@ export class PixelArtRuntimeController implements PixelArtController {
     );
   }
 
-  private dispatchPixelMutationEvent(detail: Omit<PixelArtPixelEventDetail, 'pointerId' | 'button' | 'hasPixel'>): void {
+  private dispatchPixelMutationEvent(
+    detail: Pick<
+      PixelArtPixelEventDetail,
+      'frameIndex' | 'x' | 'y' | 'sourceX' | 'sourceY' | 'paletteIndex' | 'previousIndex'
+    >
+  ): void {
     this.host.dispatchEvent(
       new CustomEvent('pixelscript:pixel-change', {
         bubbles: true,
         composed: true,
         detail: {
-          sourceX: detail.x,
-          sourceY: detail.y,
+          ...detail,
           pointerId: -1,
           button: -1,
           hasPixel: true,
-          ...detail
         }
       })
     );
