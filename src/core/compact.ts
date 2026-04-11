@@ -5,12 +5,13 @@ import type {
   PixelScriptDocument,
   PixelScriptPixelInput
 } from '@/schema/types';
-import { normalizePalette } from '@/palette';
+import { getPaletteColorCount, normalizePalette } from '@/palette';
 
 export function normalizePixelsInput(
   pixels: PixelScriptPixelInput,
   width: number,
-  height: number
+  height: number,
+  maxIndex = 63
 ): string {
   const expectedLength = width * height;
 
@@ -19,7 +20,14 @@ export function normalizePixelsInput(
       throw new RangeError(`Expected ${expectedLength} compact pixels, received ${pixels.length}.`);
     }
 
-    decodePixelsString(pixels);
+    const decoded = decodePixelsString(pixels);
+
+    for (let index = 0; index < decoded.length; index += 1) {
+      if (decoded[index]! > maxIndex) {
+        throw new RangeError(`Pixel index at ${index} (${decoded[index]}) exceeds palette slot count ${maxIndex + 1}.`);
+      }
+    }
+
     return pixels;
   }
 
@@ -36,6 +44,10 @@ export function normalizePixelsInput(
       throw new RangeError(`Pixel values must be integers between 0 and 63. Invalid value at ${index}: ${value}`);
     }
 
+    if (value > maxIndex) {
+      throw new RangeError(`Pixel index at ${index} (${value}) exceeds palette slot count ${maxIndex + 1}.`);
+    }
+
     indices[index] = value;
   }
 
@@ -43,14 +55,17 @@ export function normalizePixelsInput(
 }
 
 export function parseCompact(input: PixelScriptCompactInput): PixelScriptDocument {
+  const palette = normalizePalette(input.palette);
+  const maxIndex = getPaletteColorCount(palette) - 1;
+
   const document: PixelScriptDocument = {
     version: 1,
     width: input.width,
     height: input.height,
-    palette: normalizePalette(input.palette),
+    palette,
     frames: [
       {
-        pixels: normalizePixelsInput(input.pixels, input.width, input.height)
+        pixels: normalizePixelsInput(input.pixels, input.width, input.height, maxIndex)
       }
     ]
   };
@@ -67,11 +82,14 @@ export function parseCompact(input: PixelScriptCompactInput): PixelScriptDocumen
 }
 
 export function fromArray(input: PixelScriptArrayInput): PixelScriptDocument {
+  const palette = normalizePalette(input.palette);
+  const maxIndex = getPaletteColorCount(palette) - 1;
+
   return parseCompact({
     width: input.width,
     height: input.height,
-    pixels: normalizePixelsInput(input.pixels, input.width, input.height),
-    ...(input.palette ? { palette: input.palette } : {}),
+    pixels: normalizePixelsInput(input.pixels, input.width, input.height, maxIndex),
+    palette,
     ...(input.animation ? { animation: input.animation } : {}),
     ...(input.meta ? { meta: input.meta } : {})
   });

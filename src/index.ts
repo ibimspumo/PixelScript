@@ -1,5 +1,5 @@
 export { BASE64_CHARSET, decodePixelsString, encodeIndices, getBase64Char, getBase64Index } from '@/constants/base64';
-export { createAnimation, createArt, finalizeDocument, parseDocument, stringifyDocument } from '@/core/document';
+export { createAnimation, createArt, finalizeDocument, parseDocument, stringifyDocument, validateDocument } from '@/core/document';
 export { fromArray, normalizePixelsInput, parseCompact } from '@/core/compact';
 export { mountPixelArt } from '@/dom/mount';
 export { DEFAULT_PALETTE_NAME, PIXELSCRIPT_64 } from '@/palette/default64';

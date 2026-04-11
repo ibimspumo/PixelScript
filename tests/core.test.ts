@@ -7,8 +7,10 @@ import {
   decodePixelsString,
   definePalette,
   fromArray,
+  renderSVG,
   parseCompact,
   parseDocument,
+  validateDocument,
   stringifyDocument,
   validatePalette
 } from '@/index';
@@ -88,5 +90,50 @@ describe('PixelScript core document model', () => {
 
     expect(animation.frames[0]?.durationMs).toBe(100);
     expect(animation.frames[1]?.durationMs).toBeUndefined();
+  });
+
+  it('validates pixel indices against palette size during document creation', () => {
+    expect(() =>
+      createArt({
+        width: 2,
+        height: 2,
+        pixels: [0, 1, 2, 0],
+        palette: definePalette({
+          colors: [null, '#ffffff']
+        })
+      })
+    ).toThrow(/palette slot count/i);
+  });
+
+  it('honors overridden default64 palettes when rendering', () => {
+    const document = createArt({
+      width: 2,
+      height: 2,
+      palette: {
+        kind: 'default64',
+        colors: [null, '#ff00ff', '#00ff00']
+      },
+      pixels: 'ABAA'
+    });
+
+    const svg = renderSVG(document, { scale: 1 });
+
+    expect(svg).toContain('fill="rgb(255, 0, 255)"');
+  });
+
+  it('reports validation errors without throwing for external document checks', () => {
+    const result = validateDocument({
+      version: 1,
+      width: 1,
+      height: 1,
+      palette: {
+        kind: 'default64',
+        colors: [null]
+      },
+      frames: [{ pixels: 'B' }]
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors.join(' ')).toMatch(/palette slot count|slot count/i);
   });
 });

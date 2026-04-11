@@ -40,7 +40,13 @@ export function resolveDocumentData(
     const rgba = new Uint8Array(indices.length * 4);
 
     for (let index = 0; index < indices.length; index += 1) {
-      const [red, green, blue, alpha] = paletteRgba[indices[index]!] ?? [0, 0, 0, 0];
+      const color = paletteRgba[indices[index]!];
+
+      if (color === undefined) {
+        throw new RangeError(`Pixel index ${indices[index]} is outside palette bounds.`);
+      }
+
+      const [red, green, blue, alpha] = color;
       const offset = index * 4;
       rgba[offset] = red;
       rgba[offset + 1] = green;

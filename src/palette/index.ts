@@ -68,10 +68,18 @@ export function normalizePalette(palette?: PixelScriptPalette | 'default64'): Pi
 
 export function resolvePaletteColors(palette: PixelScriptPalette): readonly PixelScriptPaletteColor[] {
   if (palette.kind === 'default64') {
-    return PIXELSCRIPT_64;
+    return palette.colors ?? PIXELSCRIPT_64;
   }
 
   return palette.colors ?? PIXELSCRIPT_64;
+}
+
+export function getPaletteColorCount(palette: PixelScriptPalette): number {
+  if (palette.kind === 'default64') {
+    return palette.colors?.length ?? PIXELSCRIPT_64.length;
+  }
+
+  return palette.colors?.length ?? PIXELSCRIPT_64.length;
 }
 
 export function parseHexColor(color: string | null): [number, number, number, number] {

@@ -120,3 +120,8 @@ export interface PixelScriptSchemaDocument {
   required: string[];
   properties: Record<string, unknown>;
 }
+
+export interface PixelScriptValidationResult {
+  valid: boolean;
+  errors: string[];
+}

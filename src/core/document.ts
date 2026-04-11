@@ -1,23 +1,27 @@
 import { normalizePixelsInput } from './compact';
-import { normalizePalette, validatePalette } from '@/palette';
+import { getPaletteColorCount, normalizePalette, validatePalette } from '@/palette';
 import type {
   PixelScriptAnimationInput,
   PixelScriptArtInput,
   PixelScriptDocument,
   PixelScriptFrame,
   PixelScriptMeta,
-  PixelScriptPalette
+  PixelScriptPalette,
+  PixelScriptValidationResult
 } from '@/schema/types';
 
 export function createArt(input: PixelScriptArtInput): PixelScriptDocument {
+  const palette = normalizePalette(input.palette);
+  const maxPixelIndex = getPaletteColorCount(palette) - 1;
+
   return finalizeDocument({
     version: 1,
     width: input.width,
     height: input.height,
-    palette: normalizePalette(input.palette),
+    palette,
     frames: [
       {
-        pixels: normalizePixelsInput(input.pixels, input.width, input.height)
+        pixels: normalizePixelsInput(input.pixels, input.width, input.height, maxPixelIndex)
       }
     ],
     ...(input.animation ? { animation: input.animation } : {}),
@@ -26,13 +30,16 @@ export function createArt(input: PixelScriptArtInput): PixelScriptDocument {
 }
 
 export function createAnimation(input: PixelScriptAnimationInput): PixelScriptDocument {
+  const palette = normalizePalette(input.palette);
+  const maxPixelIndex = getPaletteColorCount(palette) - 1;
+
   return finalizeDocument({
     version: 1,
     width: input.width,
     height: input.height,
-    palette: normalizePalette(input.palette),
+    palette,
     frames: input.frames.map((frame) => ({
-      pixels: normalizePixelsInput(frame.pixels, input.width, input.height),
+      pixels: normalizePixelsInput(frame.pixels, input.width, input.height, maxPixelIndex),
       ...(frame.durationMs ? { durationMs: frame.durationMs } : {})
     })),
     ...(input.animation ? { animation: input.animation } : {}),
@@ -43,6 +50,18 @@ export function createAnimation(input: PixelScriptAnimationInput): PixelScriptDo
 export function parseDocument(input: string | PixelScriptDocument): PixelScriptDocument {
   const parsed = typeof input === 'string' ? JSON.parse(input) : input;
   return finalizeDocument(parsed);
+}
+
+export function validateDocument(document: unknown): PixelScriptValidationResult {
+  try {
+    finalizeDocument(document);
+    return { valid: true, errors: [] };
+  } catch (error) {
+    return {
+      valid: false,
+      errors: [error instanceof Error ? error.message : String(error)]
+    };
+  }
 }
 
 export function stringifyDocument(document: PixelScriptDocument, space = 2): string {
@@ -74,7 +93,8 @@ export function finalizeDocument(document: unknown): PixelScriptDocument {
   }
 
   const normalizedPalette = validatePaletteObject(palette);
-  const normalizedFrames = frames.map((frame, index) => normalizeFrame(frame, width, height, index));
+  const maxPixelIndex = getPaletteColorCount(normalizedPalette) - 1;
+  const normalizedFrames = frames.map((frame, index) => normalizeFrame(frame, width, height, index, maxPixelIndex));
 
   const normalizedDocument: PixelScriptDocument = {
     version: 1,
@@ -98,7 +118,13 @@ export function finalizeDocument(document: unknown): PixelScriptDocument {
   return normalizedDocument;
 }
 
-function normalizeFrame(frame: unknown, width: number, height: number, index: number): PixelScriptFrame {
+function normalizeFrame(
+  frame: unknown,
+  width: number,
+  height: number,
+  index: number,
+  maxPixelIndex: number
+): PixelScriptFrame {
   if (!isRecord(frame)) {
     throw new TypeError(`Frame ${index} must be an object.`);
   }
@@ -108,7 +134,7 @@ function normalizeFrame(frame: unknown, width: number, height: number, index: nu
   }
 
   const normalized: PixelScriptFrame = {
-    pixels: normalizePixelsInput(frame.pixels, width, height)
+    pixels: normalizePixelsInput(frame.pixels, width, height, maxPixelIndex)
   };
 
   if (frame.durationMs !== undefined) {

@@ -208,6 +208,7 @@ That same JSON can be used in:
 - `createArt(input)`
 - `createAnimation(input)`
 - `parseDocument(json)`
+- `validateDocument(json)`
 - `stringifyDocument(doc)`
 - `parseCompact({ width, height, pixels, palette? })`
 - `fromArray({ width, height, pixels, palette? })`
