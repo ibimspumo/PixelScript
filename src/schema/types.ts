@@ -23,6 +23,38 @@ export interface PixelScriptMeta {
   tags?: string[];
 }
 
+export type PixelArtRotate = 0 | 90 | 180 | 270;
+
+export interface PixelArtTransform {
+  rotate?: PixelArtRotate;
+  flipX?: boolean;
+  flipY?: boolean;
+}
+
+export interface PixelArtColorTransform {
+  brightness?: number;
+  contrast?: number;
+  alpha?: number;
+  tint?: string;
+  tintAmount?: number;
+}
+
+export interface PixelArtTransformKeyframe {
+  at: number;
+  value: PixelArtTransform;
+}
+
+export interface PixelArtColorKeyframe {
+  at: number;
+  value: PixelArtColorTransform;
+}
+
+export interface PixelArtMotion {
+  durationMs?: number;
+  transform?: PixelArtTransformKeyframe[];
+  color?: PixelArtColorKeyframe[];
+}
+
 export interface PixelScriptDocument {
   version: 1;
   width: number;
@@ -83,6 +115,10 @@ export interface PixelArtRenderOptions {
   frame?: number;
   fps?: number;
   loop?: boolean;
+  transform?: PixelArtTransform;
+  color?: PixelArtColorTransform;
+  motion?: PixelArtMotion;
+  motionTimeMs?: number;
 }
 
 export interface PixelArtGIFRenderOptions extends PixelArtRenderOptions {

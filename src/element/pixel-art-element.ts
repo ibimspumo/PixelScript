@@ -6,7 +6,23 @@ const HTMLElementBase = (typeof HTMLElement === 'undefined' ? class {} : HTMLEle
 
 export class PixelArtElement extends HTMLElementBase {
   static get observedAttributes(): string[] {
-    return ['src', 'data', 'render', 'scale', 'fps', 'loop', 'autoplay'];
+    return [
+      'src',
+      'data',
+      'render',
+      'scale',
+      'fps',
+      'loop',
+      'autoplay',
+      'rotate',
+      'flip-x',
+      'flip-y',
+      'brightness',
+      'contrast',
+      'alpha',
+      'tint',
+      'tint-amount'
+    ];
   }
 
   private controller: PixelArtController | null = null;
@@ -130,7 +146,15 @@ export class PixelArtElement extends HTMLElementBase {
   private readOptions(): PixelArtMountOptions {
     const scale = this.getAttribute('scale');
     const fps = this.getAttribute('fps');
+    const rotate = this.getAttribute('rotate');
     const loop = this.getAttribute('loop');
+    const flipX = this.getAttribute('flip-x');
+    const flipY = this.getAttribute('flip-y');
+    const brightness = this.getAttribute('brightness');
+    const contrast = this.getAttribute('contrast');
+    const alpha = this.getAttribute('alpha');
+    const tint = this.getAttribute('tint');
+    const tintAmount = this.getAttribute('tint-amount');
     const options: PixelArtMountOptions = {
       render: (this.getAttribute('render') as PixelArtMountOptions['render']) ?? 'canvas',
       autoplay: this.hasAttribute('autoplay')
@@ -142,6 +166,85 @@ export class PixelArtElement extends HTMLElementBase {
 
     if (fps) {
       options.fps = Number.parseFloat(fps);
+    }
+
+    if (rotate !== null) {
+      options.transform = {
+        rotate: Number.parseInt(rotate, 10) as 0 | 90 | 180 | 270
+      };
+    }
+
+    if (flipX !== null) {
+      options.transform = {
+        ...(options.transform ?? {}),
+        flipX: flipX !== 'false'
+      };
+    }
+
+    if (flipY !== null) {
+      options.transform = {
+        ...(options.transform ?? {}),
+        flipY: flipY !== 'false'
+      };
+    }
+
+    if (brightness !== null) {
+      const value = Number.parseFloat(brightness);
+
+      if (Number.isNaN(value)) {
+        throw new TypeError('brightness must be a number.');
+      }
+
+      options.color = {
+        ...(options.color ?? {}),
+        brightness: value
+      };
+    }
+
+    if (contrast !== null) {
+      const value = Number.parseFloat(contrast);
+
+      if (Number.isNaN(value)) {
+        throw new TypeError('contrast must be a number.');
+      }
+
+      options.color = {
+        ...(options.color ?? {}),
+        contrast: value
+      };
+    }
+
+    if (alpha !== null) {
+      const value = Number.parseFloat(alpha);
+
+      if (Number.isNaN(value)) {
+        throw new TypeError('alpha must be a number.');
+      }
+
+      options.color = {
+        ...(options.color ?? {}),
+        alpha: value
+      };
+    }
+
+    if (tint !== null) {
+      options.color = {
+        ...(options.color ?? {}),
+        tint
+      };
+    }
+
+    if (tintAmount !== null) {
+      const value = Number.parseFloat(tintAmount);
+
+      if (Number.isNaN(value)) {
+        throw new TypeError('tint-amount must be a number.');
+      }
+
+      options.color = {
+        ...(options.color ?? {}),
+        tintAmount: value
+      };
     }
 
     if (loop !== null) {

@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { createAnimation, createArt, renderCanvas, renderDataURL, renderGIF, renderPNG, renderSVG } from '@/index';
+import {
+  createAnimation,
+  createArt,
+  definePalette,
+  renderCanvas,
+  renderDataURL,
+  renderGIF,
+  renderPNG,
+  renderSVG
+} from '@/index';
 import { MemoryCanvas } from '@/renderers/memory-canvas';
 
 const document = createAnimation({
@@ -43,6 +52,103 @@ describe('PixelScript renderers', () => {
     expect(svg).toContain('<svg');
     expect(svg).toContain('shape-rendering="crispEdges"');
     expect(svg).toContain('fill="rgb(255, 255, 255)"');
+  });
+
+  it('applies geometry transforms during render resolution', () => {
+    const palette = definePalette({
+      colors: [null, '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#00ffff']
+    });
+
+    const document = createArt({
+      width: 2,
+      height: 3,
+      pixels: [0, 1, 2, 3, 4, 5],
+      palette
+    });
+
+    const canvas = renderCanvas(document, { transform: { rotate: 90 } }) as MemoryCanvas;
+
+    expect(canvas.width).toBe(3);
+    expect(canvas.height).toBe(2);
+    expect(Array.from(canvas.data.slice(0, 4))).toEqual([255, 255, 0, 255]);
+  });
+
+  it('applies color transforms during render resolution', () => {
+    const document = createArt({
+      width: 1,
+      height: 1,
+      pixels: [1],
+      palette: definePalette({
+        colors: [null, '#404040']
+      })
+    });
+
+    const brightened = renderCanvas(document, { color: { brightness: 2 } }) as MemoryCanvas;
+
+    expect(Array.from(brightened.data.slice(0, 4))).toEqual([128, 128, 128, 255]);
+  });
+
+  it('interpolates color keyframes at sample times', () => {
+    const document = createArt({
+      width: 1,
+      height: 1,
+      pixels: [1],
+      palette: definePalette({
+        colors: [null, '#404040']
+      })
+    });
+
+    const sampled = renderCanvas(document, {
+      color: { brightness: 1 },
+      motion: {
+        durationMs: 1000,
+        color: [
+          {
+            at: 0,
+            value: { brightness: 1 }
+          },
+          {
+            at: 1,
+            value: { brightness: 2 }
+          }
+        ]
+      },
+      motionTimeMs: 500
+    }) as MemoryCanvas;
+
+    expect(Array.from(sampled.data.slice(0, 4))).toEqual([96, 96, 96, 255]);
+  });
+
+  it('follows transform keyframes over timeline', () => {
+    const document = createArt({
+      width: 2,
+      height: 1,
+      pixels: [1, 2],
+      palette: definePalette({
+        colors: [null, '#ff0000', '#00ff00']
+      })
+    });
+
+    const sampled = renderCanvas(document, {
+      motion: {
+        durationMs: 1000,
+        transform: [
+          {
+            at: 0,
+            value: { rotate: 0 }
+          },
+          {
+            at: 0.4,
+            value: { rotate: 90 }
+          }
+        ]
+      },
+      motionTimeMs: 500
+    }) as MemoryCanvas;
+
+    expect(sampled.width).toBe(1);
+    expect(sampled.height).toBe(2);
+    expect(Array.from(sampled.data.slice(0, 4))).toEqual([255, 0, 0, 255]);
   });
 
   it('renders PNG bytes with the PNG header signature', async () => {

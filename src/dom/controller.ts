@@ -19,6 +19,7 @@ export class PixelArtRuntimeController implements PixelArtController {
   private currentFrame = 0;
   private playbackTimer: number | null = null;
   private runToken = 0;
+  private frameTimings: number[] = [];
 
   constructor(private readonly host: HTMLElement, document: PixelScriptDocument, options: PixelArtMountOptions = {}) {
     this.documentData = document;
@@ -35,46 +36,82 @@ export class PixelArtRuntimeController implements PixelArtController {
     this.clearPlayback();
     this.runToken += 1;
     const token = this.runToken;
+    const frameTimings = this.resolveFrameTimings();
+    const totalDuration = frameTimings.reduce((sum, duration) => sum + duration, 0);
 
     if (this.renderMode() === 'gif') {
+      if (this.options.motion) {
+        this.playWithTimeline(iterations, token, frameTimings, totalDuration);
+        return;
+      }
+
       void this.playGif(iterations, token);
       return;
     }
 
-    let cyclesRemaining = iterations === 'infinite' ? Number.POSITIVE_INFINITY : iterations;
+    this.playWithTimeline(iterations, token, frameTimings, totalDuration);
+  }
 
-    const step = async () => {
+  private playWithTimeline(
+    iterations: number | 'infinite',
+    token: number,
+    frameTimings: number[],
+    totalDuration: number
+  ): void {
+    if (totalDuration <= 0) {
+      return;
+    }
+
+    let cyclesRemaining = iterations === 'infinite' ? Number.POSITIVE_INFINITY : iterations;
+    const startTime = performance.now();
+
+    const tick = () => {
       if (token !== this.runToken) {
         return;
       }
 
-      await this.renderFrame(this.currentFrame);
-      const resolved = resolveDocumentData(this.documentData, this.options);
-      const duration = resolved.frames[this.currentFrame]!.durationMs;
+      const elapsed = performance.now() - startTime;
+      const completedCycles = Math.floor(elapsed / totalDuration);
 
-      this.playbackTimer = window.setTimeout(() => {
-        if (token !== this.runToken) {
-          return;
-        }
+      if (Number.isFinite(cyclesRemaining) && completedCycles >= cyclesRemaining) {
+        this.currentFrame = this.documentData.frames.length - 1;
+        void this.renderFrame(this.currentFrame, totalDuration - 1);
+        this.clearPlayback();
+        this.dispatchCompletion();
+        return;
+      }
 
-        if (this.currentFrame === this.documentData.frames.length - 1) {
-          cyclesRemaining = Number.isFinite(cyclesRemaining) ? cyclesRemaining - 1 : cyclesRemaining;
+      const cycleTime = elapsed % totalDuration;
+      const frameInfo = this.resolveFrameByTimeline(frameTimings, cycleTime);
+      this.currentFrame = frameInfo.frameIndex;
+      const options = this.options.motion ? cycleTime : undefined;
+      void this.renderFrame(this.currentFrame, options);
 
-          if (cyclesRemaining <= 0) {
-            this.dispatchCompletion();
-            return;
-          }
-
-          this.currentFrame = 0;
-        } else {
-          this.currentFrame += 1;
-        }
-
-        void step();
-      }, duration);
+      this.playbackTimer = window.requestAnimationFrame(tick);
     };
 
-    void step();
+    tick();
+  }
+
+  private resolveFrameByTimeline(frameTimings: number[], cycleTime: number): { frameIndex: number } {
+    let cursor = 0;
+
+    for (let index = 0; index < frameTimings.length; index += 1) {
+      const duration = frameTimings[index]!;
+      if (cycleTime < cursor + duration) {
+        return { frameIndex: index };
+      }
+
+      cursor += duration;
+    }
+
+    return { frameIndex: frameTimings.length - 1 };
+  }
+
+  private resolveFrameTimings(): number[] {
+    const resolved = resolveDocumentData(this.documentData, this.options);
+    this.frameTimings = resolved.frames.map((frame) => frame.durationMs);
+    return this.frameTimings;
   }
 
   pause(): void {
@@ -149,15 +186,17 @@ export class PixelArtRuntimeController implements PixelArtController {
     }
   }
 
-  private async renderFrame(frameIndex: number): Promise<void> {
+  private async renderFrame(frameIndex: number, motionTimeMs?: number): Promise<void> {
     this.currentFrame = frameIndex;
+    const options = {
+      ...this.options,
+      frame: frameIndex,
+      ...(motionTimeMs === undefined ? {} : { motionTimeMs })
+    };
     const mode = this.renderMode();
 
     if (mode === 'canvas') {
-      const canvas = renderCanvas(this.documentData, {
-        ...this.options,
-        frame: frameIndex
-      });
+      const canvas = renderCanvas(this.documentData, options);
 
       if (canvas instanceof HTMLCanvasElement) {
         this.mountNode(canvas);
@@ -181,10 +220,7 @@ export class PixelArtRuntimeController implements PixelArtController {
 
     if (mode === 'svg') {
       const template = document.createElement('template');
-      template.innerHTML = renderSVG(this.documentData, {
-        ...this.options,
-        frame: frameIndex
-      });
+      template.innerHTML = renderSVG(this.documentData, options);
       const node = template.content.firstElementChild;
 
       if (!(node instanceof SVGSVGElement)) {
@@ -196,7 +232,7 @@ export class PixelArtRuntimeController implements PixelArtController {
     }
 
     const image = this.ensureImageNode();
-    image.src = await this.getPngFrame(frameIndex);
+    image.src = await this.getPngFrame(frameIndex, motionTimeMs);
   }
 
   private ensureImageNode(): HTMLImageElement {
@@ -222,20 +258,49 @@ export class PixelArtRuntimeController implements PixelArtController {
     this.mountedNode = node;
   }
 
-  private getPngFrame(frameIndex: number): Promise<string> {
+  private getPngFrame(frameIndex: number, motionTimeMs?: number): Promise<string> {
+    if (!this.options.motion) {
+      if (!this.framePngCache) {
+        this.framePngCache = this.documentData.frames.map((_, index) =>
+          Promise.resolve(
+            renderDataURL(this.documentData, {
+              ...this.options,
+              format: 'png',
+              frame: index
+            })
+          )
+        );
+      }
+
+      return Promise.resolve(this.framePngCache[frameIndex]!);
+    }
+
     if (!this.framePngCache) {
       this.framePngCache = this.documentData.frames.map((_, index) =>
         Promise.resolve(
           renderDataURL(this.documentData, {
             ...this.options,
             format: 'png',
-            frame: index
+            frame: index,
+            ...(motionTimeMs === undefined ? {} : { motionTimeMs })
           })
         )
       );
     }
 
-    return this.framePngCache[frameIndex]!;
+    if (motionTimeMs === undefined) {
+        return Promise.resolve(this.framePngCache[frameIndex]!);
+    }
+
+    const frame = this.resolveFrameByTimeline(this.frameTimings, motionTimeMs);
+    return Promise.resolve(
+      renderDataURL(this.documentData, {
+      ...this.options,
+      format: 'png',
+      frame: frame.frameIndex,
+      motionTimeMs
+    })
+    );
   }
 
   private renderMode(): NonNullable<PixelArtMountOptions['render']> {
